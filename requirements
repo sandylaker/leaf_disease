@@ -1,0 +1,12 @@
+numpy
+setuptools
+timm
+pandas
+sklearn
+scikit-learn
+albumentations
+torchvision
+opencv-python
+torch
+mmcv-full
+pytorch-lightning
