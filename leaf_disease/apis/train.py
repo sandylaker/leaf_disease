@@ -13,7 +13,7 @@ def train_classifier(cfg,
                      work_dir=os.getcwd(),
                      seed=2020,
                      **kwargs):
-    set_random_seed(seed, deterministic=True)
+    set_random_seed(seed)
     lit_model = LitModel(cfg)
 
     early_stopping = EarlyStopping(monitor='val_loss',
@@ -21,7 +21,7 @@ def train_classifier(cfg,
                                    mode='min')
     model_checkpoint = ModelCheckpoint(filepath=None,
                                        monitor='accuracy',
-                                       verbose=True,
+                                       verbose=False,
                                        save_last=True,
                                        save_top_k=2,
                                        mode='max',

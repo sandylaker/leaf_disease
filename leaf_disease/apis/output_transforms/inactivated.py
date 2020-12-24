@@ -29,7 +29,7 @@ class OneHotToIndicesTransform(BaseTransform):
     """
     Transform:
         pred to pred
-        onehot_y to y
+        onehot_y (or discrete distributed y) to y
     """
     def __init__(self, return_weight=False):
         super(OneHotToIndicesTransform, self).__init__()

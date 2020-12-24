@@ -23,7 +23,7 @@ trainer = dict(
     log_every_n_steps=50,
     precision=32,
     max_epochs=10,
-    accelerator='ddp',
+    accelerator=None,
     move_metrics_to_cpu=False)
 
 callbacks = dict(

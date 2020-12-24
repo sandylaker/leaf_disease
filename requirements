@@ -1,12 +1,13 @@
 numpy
+scipy
 setuptools
 timm
+inplace-abn
 pandas
-sklearn
 scikit-learn
 albumentations
 torchvision
 opencv-python
-torch
+pytorch
 mmcv-full
 pytorch-lightning

@@ -7,7 +7,6 @@ from mmcv import list_from_file
 from leaf_disease.datasets.transforms import build_pipeline, MixUp, CutMix
 from leaf_disease.datasets.weight import build_weights
 import cv2
-from torchvision.transforms.functional import rotate
 
 
 class LeafDiseaseDataset(Dataset):
@@ -23,6 +22,7 @@ class LeafDiseaseDataset(Dataset):
                  annot_file,
                  indices_file,
                  pipeline,
+                 mixed_label=False,
                  mixup_cfg=None,
                  cutmix_cfg=None,
                  weight_cfg=None,
@@ -32,6 +32,7 @@ class LeafDiseaseDataset(Dataset):
         self.annot_file = annot_file
         self.indices_file = indices_file
         self.pipeline = build_pipeline(pipeline)
+        self.mixed_label = mixed_label
         self.mixup_cfg = mixup_cfg
         self.cutmix_cfg = cutmix_cfg
 
@@ -41,15 +42,22 @@ class LeafDiseaseDataset(Dataset):
 
         # indices of data frame after indexing are not continuous, reset them to maintain continuity
         self.annot_df = annot_df.loc[indices].reset_index(drop=True)
-        self.targets = self.annot_df['label'].values
+        if not self.mixed_label:
+            self.targets = self.annot_df['label'].values
+        else:
+            self.mixed_label_cols = [f'mixed_{i}' for i in self.idx_to_class.keys()]
+            self.targets = self.annot_df[self.mixed_label_cols].values
+
         if weight_cfg is None:
             weight_cfg = dict(type='PseudoWeight')
         self.weight_calc = build_weights(weight_cfg)
-        self.cls_weights = self.weight_calc.get_weights(self.targets, key='index',
-                                                        idx_to_class=None)
+        self.cls_weights = self.weight_calc.get_weights(
+            self.annot_df['label'].values, key='index', idx_to_class=None)
+
         self.return_weight = return_weight
         if self.return_weight:
-            self.sample_weights = self.convert_weights(self.cls_weights, self.targets)
+            self.sample_weights = self.convert_weights(self.cls_weights,
+                                                       self.annot_df['label'].values)
             assert len(self.annot_df) == len(self.sample_weights)
 
         # build mixup and cutmix transformations
@@ -92,7 +100,10 @@ class LeafDiseaseDataset(Dataset):
 
     def _pre_pipeline(self, index):
         img_name = self.annot_df.loc[index, 'image_id']
-        target = int(self.annot_df.loc[index, 'label'])
+        if not self.mixed_label:
+            target = int(self.annot_df.loc[index, 'label'])
+        else:
+            target = self.targets[index]
         img_file = osp.join(self.img_dir, img_name)
 
         img = cv2.cvtColor(cv2.imread(img_file), cv2.COLOR_BGR2RGB)
@@ -100,40 +111,8 @@ class LeafDiseaseDataset(Dataset):
 
     @staticmethod
     def convert_weights(cls_weights: dict, targets):
-        targets = np.array(targets)
+        targets = np.asarray(targets)
         weights_per_sample = np.zeros_like(targets, dtype=float)
         for cls_ind, cls_w in cls_weights.items():
             weights_per_sample[targets == cls_ind] = cls_w
         return list(weights_per_sample)
-
-
-class UnsupervisedDataset(LeafDiseaseDataset):
-    idx_to_class = {0: 'rotate_0',
-                    1: 'rotate_90',
-                    2: 'rotate_180',
-                    3: 'rotate_270'}
-
-    def __init__(self,
-                 img_dir,
-                 annot_file,
-                 indices_file,
-                 pipeline):
-        super(UnsupervisedDataset, self).__init__(img_dir,
-                                                  annot_file,
-                                                  indices_file,
-                                                  pipeline,
-                                                  None,
-                                                  False)
-        self.targets = None
-
-    def __getitem__(self, index):
-        img, _ = super(UnsupervisedDataset, self).__getitem__(index)
-        imgs, ys = self._random_rotate(img)
-        imgs = torch.stack(imgs)
-        return imgs, ys
-
-    @staticmethod
-    def _random_rotate(img_tensor):
-        imgs = [rotate(img_tensor, angle=int(90 * i)) for i in range(4)]
-        ys = torch.arange(4)
-        return imgs, ys

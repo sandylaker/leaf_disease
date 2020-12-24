@@ -135,7 +135,7 @@ class EfficientNet(nn.Module):
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
             incompatible_keys = load_checkpoint(self, pretrained)
-        elif pretrained is None:
+        elif pretrained is None or not pretrained:
             self.apply(init_weights)
         else:
             raise TypeError('pretrained must be a str or None')
