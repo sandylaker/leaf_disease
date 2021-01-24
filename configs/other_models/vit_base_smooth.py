@@ -1,7 +1,12 @@
-dataset_type = 'LeafDiseaseDataset'
-data_root = 'data/'
+_base_ = ['../_base_/leaf_dataset.py', '../_base_/runtime.py']
 
-img_size = 224
+pretrained = True
+model = dict(
+    type='vit_base_patch16_384',
+    num_classes=5,
+    pretrained=pretrained)
+
+img_size = 512
 img_norm_config = dict(
     mean=[0.485, 0.465, 0.406],
     std=[0.229, 0.224, 0.225])
@@ -50,23 +55,23 @@ test_pipeline = [
          **img_norm_config),
     dict(type='ToTensor')]
 
+
 data = dict(
     data_loader=dict(
-        batch_size=32,
-        shuffle=True,
-        num_workers=16,
-        timeout=240),
+        batch_size=16),
     train=dict(
-        type=dataset_type,
-        img_dir=data_root + 'train_images/',
-        annot_file=data_root + 'train.csv',
-        indices_file=data_root + 'kfold/train_1.txt',
         pipeline=train_pipeline,
         return_weight=True),
     val=dict(
-        type=dataset_type,
-        img_dir=data_root + 'train_images/',
-        annot_file=data_root + 'train.csv',
-        indices_file=data_root + 'kfold/val_1.txt',
         pipeline=test_pipeline,
         return_weight=True))
+
+loss = dict(
+    _delete_=True,
+    type='LabelSmoothLoss',
+    label_smooth_val=0.1,
+    num_classes=5,
+)
+
+optimizer = dict(
+    weight_decay=3e-6)
