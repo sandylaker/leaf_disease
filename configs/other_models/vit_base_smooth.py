@@ -6,7 +6,7 @@ model = dict(
     num_classes=5,
     pretrained=pretrained)
 
-img_size = 512
+img_size = 384
 img_norm_config = dict(
     mean=[0.485, 0.465, 0.406],
     std=[0.229, 0.224, 0.225])
@@ -69,7 +69,7 @@ data = dict(
 loss = dict(
     _delete_=True,
     type='LabelSmoothLoss',
-    label_smooth_val=0.1,
+    label_smooth_val=0.2,
     num_classes=5,
 )
 
